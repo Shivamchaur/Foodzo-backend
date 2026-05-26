@@ -11,11 +11,14 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Connect to database. Mongoose will buffer queries until connected.
-connectDB();
-
 app.use(cors());
 app.use(express.json());
+
+// Await database connection on each request in Serverless
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
@@ -27,7 +30,6 @@ app.get('/', (req, res) => {
   res.send({ message: 'Foodzo API is running' });
 });
 
-// Start server only if not in production (Vercel uses serverless functions instead)
 if (process.env.NODE_ENV !== 'production') {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
