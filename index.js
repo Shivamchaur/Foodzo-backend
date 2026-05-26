@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
-const seedDatabase = require('./seeder');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const orderRoutes = require('./routes/orders');
@@ -12,42 +11,27 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-const startServer = async () => {
-  await connectDB();
-  await seedDatabase();
-  app.use(cors());
-  app.use(express.json());
+// Connect to database. Mongoose will buffer queries until connected.
+connectDB();
 
-  let isconnected = false;
-  try {
-    await connectDB();
-    isconnected = true;
-  } catch (error) {
-    console.error('MongoDB connection error:', error.message);
-    console.warn('Continuing without MongoDB. Sample data fallback is enabled.');
-  }
+app.use(cors());
+app.use(express.json());
 
-  app.use((req, res, next) => {
-    if (isconnected) {
-      next();
-    } else {
-      res.status(503).json({ error: 'Service unavailable. Please try again later.' });
-    }
+app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
+app.use('/api/orders', orderRoutes);
+app.use('/api/recipes', recipeRoutes);
+app.use('/api/admin', adminRoutes);
+
+app.get('/', (req, res) => {
+  res.send({ message: 'Foodzo API is running' });
+});
+
+// Start server only if not in production (Vercel uses serverless functions instead)
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
   });
+}
 
-  app.use('/api/auth', authRoutes);
-  app.use('/api/products', productRoutes);
-  app.use('/api/orders', orderRoutes);
-  app.use('/api/recipes', recipeRoutes);
-  app.use('/api/admin', adminRoutes);
-  
-  app.get('/', (req, res) => {
-    res.send({ message: 'Foodzo API is running' });
-  });
-
- // app.listen(PORT, () => {
- //   console.log(`Server is running on port ${PORT}`);
- // });
-};
-
-startServer();
+module.exports = app;
