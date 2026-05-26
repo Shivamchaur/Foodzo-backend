@@ -16,8 +16,16 @@ app.use(express.json());
 
 // Await database connection on each request in Serverless
 app.use(async (req, res, next) => {
-  await connectDB();
-  next();
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    // If DB fails to connect, return 500 immediately instead of timing out
+    res.status(500).json({ 
+      error: 'Database Connection Failed', 
+      details: error.message 
+    });
+  }
 });
 
 app.use('/api/auth', authRoutes);
