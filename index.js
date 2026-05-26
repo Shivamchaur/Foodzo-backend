@@ -18,6 +18,23 @@ const startServer = async () => {
   app.use(cors());
   app.use(express.json());
 
+  let isconnected = false;
+  try {
+    await connectDB();
+    isconnected = true;
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    console.warn('Continuing without MongoDB. Sample data fallback is enabled.');
+  }
+
+  app.use((req, res, next) => {
+    if (isconnected) {
+      next();
+    } else {
+      res.status(503).json({ error: 'Service unavailable. Please try again later.' });
+    }
+  });
+
   app.use('/api/auth', authRoutes);
   app.use('/api/products', productRoutes);
   app.use('/api/orders', orderRoutes);
@@ -28,9 +45,9 @@ const startServer = async () => {
     res.send({ message: 'Foodzo API is running' });
   });
 
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
+ // app.listen(PORT, () => {
+ //   console.log(`Server is running on port ${PORT}`);
+ // });
 };
 
 startServer();
